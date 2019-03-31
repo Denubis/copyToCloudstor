@@ -2,13 +2,21 @@
 counter=1
 set -euo pipefail
 
-`rclone version --check | sed -E 's/:\s*/=/g' | sed -E 's/\s{2,}.*//g'`
-if [ "$yours" -ne "$latest" ]; then
-	rclone version --check | sed -E 's/:\s*/=/g' | sed -E 's/\s{2,}.*//g'
+for line in $(rclone version --check | sed -E 's/:\s*/=/g' | sed -E 's/\s{2,}.*//g');
+do
+	if [[ $line == *"="* ]]; then
+		eval $line
+	fi
+
+done
+
+if  (( $(echo "$yours == $latest" | bc -l) )) ; then
+	echo "rclone is latest version."
+
+else
+	rclone version --check
 	echo "Upgrade rclone"
 	exit 1
-else
-	echo "rclone is latest version."
 fi
 
 
