@@ -33,7 +33,7 @@ while ! rclone check $source_absolute_path $2 2>&1 | grep ': 0 differences found
 do
 	counter=$((counter+1))
 	echo "Starting run ${counter} at $(date)"
-	rclone copy --progress --transfers 10 $source_absolute_path $2
+	rclone copy --progress --transfers 6 $source_absolute_path $2
 	echo "Done with run ${counter} at $(date)"
 done
 
