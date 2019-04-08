@@ -29,7 +29,7 @@ source_absolute_path=$(readlink -m $1)
 echo "Copying ${source_absolute_path} to ${2}. Starting at $(date)"
 
 
-while ! rclone check $source_absolute_path $2 2>&1 | grep ': 0 differences found'; 
+while ! rclone check --one-way $source_absolute_path $2 2>&1 | grep ': 0 differences found'; 
 do
 	counter=$((counter+1))
 	echo "Starting run ${counter} at $(date)"
