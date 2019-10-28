@@ -1,2 +1,2 @@
 # copyToCloudstor
-Rclone script to copy to cloudstor s3
+Rclone script to copy to cloudstor in paranoid while loop
