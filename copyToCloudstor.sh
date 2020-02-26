@@ -3,24 +3,47 @@
 counter=1
 set -euo pipefail
 
-for line in $(rclone version --check | sed -E 's/:\s*/=/g' | sed -E 's/\s{2,}.*//g'); do
-	if [[ ${line} == *"="* ]]; then
-		eval ${line}
-	fi
+VERSIONCHECK=1
+EXTRAVARS=0
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+	key="${1}"
+	case ${key} in
+		--skipversioncheck)
+			VERSIONCHECK=0
+		    	shift # past argument
+	    	;;
+    		*)    # unknown option
+			EXTRAVARS=1
+			POSITIONAL+=("$1") # save it in an array for later
+			shift # past argument
+    		;;
+	esac
 done
-
-if (( $(echo "${yours} == ${latest}" | bc -l) )) ; then
-	echo "rclone is latest version."
-else
-	rclone version --check
-	echo "Upgrade rclone"
-	exit 1
+if [ ${EXTRAVARS} -eq 1 ]; then
+	set -- "${POSITIONAL[@]}" # restore positional parameters
 fi
 
+#Check for latest rclone version
+if [ ${VERSIONCHECK} -eq 1 ]; then
+	if [ $(rclone version --check | grep -e 'yours\|latest' | sed 's/  */ /g' | cut -d' ' -f2 | uniq | wc -l) -gt 1 ]; then
+		rclone version --check
+		echo "Upgrade rclone (curl https://rclone.org/install.sh | sudo bash)"
+		exit 1
+	else 
+		echo "rclone is latest version."
+	fi
+fi
+
+#Usage
 if [ "$#" -ne 2 ]; then
 	echo "./copyToCloudstor <src> <rcloneEndpoint:dest>"
+	echo "  --skipversioncheck"
+
 	exit 1
 fi
+
+
 source_absolute_path=$(readlink -m ${1})
 
 echo "Copying ${source_absolute_path} to ${2}. Starting at $(date)"
