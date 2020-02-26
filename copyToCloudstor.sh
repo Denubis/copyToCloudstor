@@ -60,9 +60,9 @@ if [ "$#" -ne 2 ] || [ ${HELP} -eq 1 ]; then
 	echo "./copyToCloudstor <src> <rcloneEndpoint:dest>"
 	echo "  --help              : This help"
 	echo "  --skipversioncheck  : Skip rclone version checking"
-	echo "  --pushfirst         : Skip first oneway check (one less propfind)"
 	echo "  --nocheck           : Just pushes once without retrying"
 	echo "  -p|--parallel       : Number of file transfers to run in parallel. (default 6)"
+	echo "  --pushfirst         : Skip first oneway check (one less propfind)"
 	echo "  --showdiff          : Show diff when checking for differences"
 
 	exit 1
