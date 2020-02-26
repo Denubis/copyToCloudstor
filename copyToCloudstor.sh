@@ -2,15 +2,23 @@
 
 set -euo pipefail
 
+#default values
+HELP=0
 VERSIONCHECK=1
 PUSHFIRST=0
 CHECK=1
 EXTRAVARS=0
 TRANSFERS=6
+
+#cli options
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
 	key="${1}"
 	case ${key} in
+		--help)
+			HELP=1
+		    	shift # past argument
+	    	;;
 		--skipversioncheck)
 			VERSIONCHECK=0
 		    	shift # past argument
@@ -39,6 +47,18 @@ if [ ${EXTRAVARS} -eq 1 ]; then
 	set -- "${POSITIONAL[@]}" # restore positional parameters
 fi
 
+#Usage
+if [ "$#" -ne 2 ] || [ ${HELP} -eq 1 ]; then
+	echo "./copyToCloudstor <src> <rcloneEndpoint:dest>"
+	echo "  --help              : This help"
+	echo "  --skipversioncheck  : Skip rclone version checking"
+	echo "  --pushfirst         : Skip first oneway check (one less propfind)"
+	echo "  --nocheck           : Just pushes once without retrying"
+	echo "  -p|--parallel       : Number of file transfers to run in parallel. (default 6)"
+
+	exit 1
+fi
+
 #Check for latest rclone version
 if [ ${VERSIONCHECK} -eq 1 ]; then
 	if [ $(rclone version --check | grep -e 'yours\|latest' | sed 's/  */ /g' | cut -d' ' -f2 | uniq | wc -l) -gt 1 ]; then
@@ -50,24 +70,13 @@ if [ ${VERSIONCHECK} -eq 1 ]; then
 	fi
 fi
 
-#Usage
-if [ "$#" -ne 2 ]; then
-	echo "./copyToCloudstor <src> <rcloneEndpoint:dest>"
-	echo "  --skipversioncheck  : Skip rclone version checking"
-	echo "  --pushfirst         : Skip first oneway check (one less propfind)"
-	echo "  --nocheck           : Just pushes once without retrying"
-	echo "  -p|--parallel       : Number of file transfers to run in parallel. (default 6)"
-
-	exit 1
-fi
-
 #Do the transfer
 SECONDS=0
 source_absolute_path=$(readlink -m ${1})
 
 echo "Copying ${source_absolute_path} to ${2}. Starting at $(date)"
 
-if [ ${PUSHFIRST} -eq 1 || ${CHECK} -eq 0 ]; then
+if [ ${PUSHFIRST} -eq 1 ] || [ ${CHECK} -eq 0 ]; then
 	rclone copy --progress --no-traverse --transfers ${TRANSFERS} ${source_absolute_path} ${2}
 fi
 if [ ${CHECK} -eq 1 ]; then
