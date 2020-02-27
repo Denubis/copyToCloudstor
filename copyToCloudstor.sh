@@ -15,6 +15,7 @@ VERSIONCHECK=1
 SHOWDIFF=""
 TIMEOUT=0
 TRANSFERS=12
+PULL=0
 
 #cli options
 POSITIONAL=()
@@ -46,7 +47,12 @@ while [[ $# -gt 0 ]]; do
 			VERSIONCHECK=0
 		    	shift # past argument
 	    	;;
-    		*)    # unknown option
+	    --pull)
+			PULL=1
+			CHECK=0
+				shift
+			;;
+    	*)    # unknown option
 			EXTRAVARS=1
 			POSITIONAL+=("$1") # save it in an array for later
 			shift # past argument
@@ -72,7 +78,7 @@ fi
 
 #Check for latest rclone version
 if [ ${VERSIONCHECK} -eq 1 ]; then
-	if [ $(rclone version --check | grep -e 'yours\|latest' | sed 's/  */ /g' | cut -d' ' -f2 | uniq | wc -l) -gt 1 ]; then
+	if [ "$(rclone version --check | grep -e 'yours\|latest' | sed 's/  */ /g' | cut -d' ' -f2 | uniq | wc -l)" -gt 1 ]; then
 		rclone version --check
 		echo "Upgrade rclone (curl https://rclone.org/install.sh | sudo bash)"
 		exit 1
@@ -83,27 +89,41 @@ fi
 
 #Do the transfer
 SECONDS=0
-source_absolute_path=$(readlink -m ${1})
+source_absolute_path=$(readlink -m "${1}")
 
-echo "Copying ${source_absolute_path} to ${2}. Starting at $(date)"
 
 rcloneoptions="--transfers ${TRANSFERS} --checkers ${CHECKERS} --timeout ${TIMEOUT}"
 
-counter=1
-if [ ${PUSHFIRST} -eq 1 ] || [ ${CHECK} -eq 0 ]; then
-	echo "Starting run ${counter} at $(date) without checks"
-	rclone copy --progress --no-check-dest --no-traverse ${rcloneoptions} ${source_absolute_path} ${2}
-	echo "Done with run ${counter} at $(date)"
-	counter=$((counter+1))
-fi
-if [ ${CHECK} -eq 1 ]; then
-	while ! rclone check --one-way ${SHOWDIFF} ${rcloneoptions} ${source_absolute_path} ${2} 2>&1 | tee /dev/stderr | grep ': 0 differences found'; do
-		echo "Starting run ${counter} at $(date)"
-		rclone copy --progress ${rcloneoptions} ${source_absolute_path} ${2}
+if [ ${PULL} -eq 0 ]; then
+	echo "Copying ${source_absolute_path} to ${2}. Starting at $(date)"
+
+	counter=1
+	if [ ${PUSHFIRST} -eq 1 ] || [ ${CHECK} -eq 0 ]; then
+		echo "Starting run ${counter} at $(date) without checks"
+		rclone copy --progress --no-check-dest --no-traverse ${rcloneoptions} "${source_absolute_path}" "${2}"
 		echo "Done with run ${counter} at $(date)"
 		counter=$((counter+1))
-	done
+	fi
+	if [ ${CHECK} -eq 1 ]; then
+		while ! rclone check --one-way ${SHOWDIFF} ${rcloneoptions} "${source_absolute_path}" "${2}" 2>&1 | tee /dev/stderr | grep ': 0 differences found'; do
+			echo "Starting run ${counter} at $(date)"
+			rclone copy --progress "${rcloneoptions}" "${source_absolute_path}" "${2}"
+			echo "Done with run ${counter} at $(date)"
+			counter=$((counter+1))
+		done
+	fi
+else
+	echo "Copying ${1} to ${2}. Starting at $(date)"
+
+	counter=1
+	if [ ${PUSHFIRST} -eq 1 ] || [ ${CHECK} -eq 0 ]; then
+		echo "Starting run ${counter} at $(date) without checks"
+		rclone copy --progress --no-check-dest --no-traverse ${rcloneoptions} "${1}" "${2}"
+		echo "Done with run ${counter} at $(date)"
+		counter=$((counter+1))
+	fi
 fi
 
+
 duration=${SECONDS}
-echo "Copied ${source_absolute_path} to ${2}. Finished at $(date), in $((${duration} / 60)) minutes and $((${duration} % 60)) seconds elapsed."
+echo "Copied '${1}' to '${2}'. Finished at $(date), in $((duration / 60)) minutes and $((duration % 60)) seconds elapsed."
