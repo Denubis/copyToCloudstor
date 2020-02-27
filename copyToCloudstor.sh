@@ -3,7 +3,7 @@
 set -euo pipefail
 
 #default values
-
+BACKLOG=36
 CHECK=1
 CHECKERS=36
 EXTRAVARS=0
@@ -12,7 +12,7 @@ PUSHFIRST=0
 VERSIONCHECK=1
 SHOWDIFF=""
 TIMEOUT=0
-TRANSFERS=12
+TRANSFERS=6
 
 #cli options
 POSITIONAL=()
@@ -85,7 +85,7 @@ source_absolute_path=$(readlink -m ${1})
 
 echo "Copying ${source_absolute_path} to ${2}. Starting at $(date)"
 
-rcloneoptions="--transfers ${TRANSFERS} --checkers ${CHECKERS} --timeout ${TIMEOUT}"
+rcloneoptions="--transfers ${TRANSFERS} --checkers ${CHECKERS} --timeout ${TIMEOUT} --max-backlog ${BACKLOG}"
 
 counter=1
 if [ ${PUSHFIRST} -eq 1 ] || [ ${CHECK} -eq 0 ]; then
