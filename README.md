@@ -11,3 +11,6 @@ Rclone script to copy to cloudstor in paranoid while loop
   --pushfirst         : Skip first oneway check (one less propfind)
   --showdiff          : Show diff when checking for differences
 ```
+
+## Requirements
+- rclone
