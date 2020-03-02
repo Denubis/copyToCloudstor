@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#Don't forget to run shellcheck (https://github.com/koalaman/shellcheck) after making edits.
+counter=1
 set -euo pipefail
 
 #default values
@@ -8,6 +10,7 @@ CHECK=1
 CHECKERS=36
 EXTRAVARS=0
 HELP=0
+PULL=0
 PUSHFIRST=0
 VERSIONCHECK=1
 SHOWDIFF=""
@@ -32,6 +35,11 @@ while [[ $# -gt 0 ]]; do
 		    	shift # past argument
 			shift # past value
 	    	;;
+		--pushonce)
+			PUSHFIRST=1
+			CHECK=0
+		    	shift # past argument
+	    	;;
 		--pushfirst)
 			PUSHFIRST=1
 		    	shift # past argument
@@ -44,7 +52,7 @@ while [[ $# -gt 0 ]]; do
 			VERSIONCHECK=0
 		    	shift # past argument
 	    	;;
-    		*)    # unknown option
+    	*)    # unknown option
 			EXTRAVARS=1
 			POSITIONAL+=("$1") # save it in an array for later
 			shift # past argument
@@ -62,6 +70,7 @@ if [ "$#" -ne 2 ] || [ ${HELP} -eq 1 ]; then
 	echo "  --skipversioncheck  : Skip rclone version checking"
 	echo "  --nocheck           : Just pushes once without retrying"
 	echo "  -p|--parallel       : Number of file transfers to run in parallel. (default 6)"
+	echo "  --pushonce          : Just does a blind push (same as --nocheck --pushfirst)"
 	echo "  --pushfirst         : Skip first oneway check (one less propfind)"
 	echo "  --showdiff          : Show diff when checking for differences"
 
@@ -70,7 +79,7 @@ fi
 
 #Check for latest rclone version
 if [ ${VERSIONCHECK} -eq 1 ]; then
-	if [ $(rclone version --check | grep -e 'yours\|latest' | sed 's/  */ /g' | cut -d' ' -f2 | uniq | wc -l) -gt 1 ]; then
+	if [ "$(rclone version --check | grep -e 'yours\|latest' | sed 's/  */ /g' | cut -d' ' -f2 | uniq | wc -l)" -gt 1 ]; then
 		rclone version --check
 		echo "Upgrade rclone (curl https://rclone.org/install.sh | sudo bash)"
 		exit 1
@@ -81,27 +90,27 @@ fi
 
 #Do the transfer
 SECONDS=0
-source_absolute_path=$(readlink -m ${1})
-
-echo "Copying ${source_absolute_path} to ${2}. Starting at $(date)"
+source_absolute_path=$(readlink -m "${1}")
 
 rcloneoptions="--transfers ${TRANSFERS} --checkers ${CHECKERS} --timeout ${TIMEOUT} --max-backlog ${BACKLOG}"
+
+echo "Copying ${source_absolute_path} to ${2}. Starting at $(date)"
 
 counter=1
 if [ ${PUSHFIRST} -eq 1 ] || [ ${CHECK} -eq 0 ]; then
 	echo "Starting run ${counter} at $(date) without checks"
-	rclone copy --progress --no-check-dest --no-traverse ${rcloneoptions} ${source_absolute_path} ${2}
+	rclone copy --progress --no-check-dest --no-traverse ${rcloneoptions} "${source_absolute_path}" "${2}"
 	echo "Done with run ${counter} at $(date)"
 	counter=$((counter+1))
 fi
 if [ ${CHECK} -eq 1 ]; then
-	while ! rclone check --one-way ${SHOWDIFF} ${rcloneoptions} ${source_absolute_path} ${2} 2>&1 | tee /dev/stderr | grep ': 0 differences found'; do
+	while ! rclone check --one-way ${SHOWDIFF} ${rcloneoptions} "${source_absolute_path}" "${2}" 2>&1 | tee /dev/stderr | grep ': 0 differences found'; do
 		echo "Starting run ${counter} at $(date)"
-		rclone copy --progress ${rcloneoptions} ${source_absolute_path} ${2}
+		rclone copy --progress "${rcloneoptions}" "${source_absolute_path}" "${2}"
 		echo "Done with run ${counter} at $(date)"
 		counter=$((counter+1))
 	done
 fi
 
 duration=${SECONDS}
-echo "Copied ${source_absolute_path} to ${2}. Finished at $(date), in $((${duration} / 60)) minutes and $((${duration} % 60)) seconds elapsed."
+echo "Copied '${1}' to '${2}'. Finished at $(date), in $((duration / 60)) minutes and $((duration % 60)) seconds elapsed."
