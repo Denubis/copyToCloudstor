@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Don't forget to run shellcheck (https://github.com/koalaman/shellcheck) after making edits.
-counter=1
+
 set -euo pipefail
 
 #default values
@@ -10,7 +10,6 @@ CHECK=1
 CHECKERS=36
 EXTRAVARS=0
 HELP=0
-PULL=0
 PUSHFIRST=0
 VERSIONCHECK=1
 SHOWDIFF=""
