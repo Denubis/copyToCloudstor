@@ -51,7 +51,7 @@ while [[ $# -gt 0 ]]; do
 			VERSIONCHECK=0
 		    	shift # past argument
 	    	;;
-    	*)    # unknown option
+		*)    # unknown option
 			EXTRAVARS=1
 			POSITIONAL+=("$1") # save it in an array for later
 			shift # past argument
