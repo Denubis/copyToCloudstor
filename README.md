@@ -2,7 +2,7 @@
 Rclone script to copy to cloudstor in paranoid while loop
 
 ```
-./copyToCloudstor <src> <rcloneEndpoint:dest>
+copyToCloudstor <src> CloudStor:<dest>
   --help              : This help
   --skipversioncheck  : Skip rclone version checking
   --nocheck           : Just pushes once without retrying
@@ -14,3 +14,7 @@ Rclone script to copy to cloudstor in paranoid while loop
 
 ## Requirements
 - rclone
+
+## Help setting up rclone to use CloudStor
+- [Can I use the command line or WebDav? – AARNet Knowledge Base](https://support.aarnet.edu.au/hc/en-us/articles/115007168507-Can-I-use-the-command-line-or-WebDav-)
+

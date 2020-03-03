@@ -64,7 +64,7 @@ fi
 
 #Usage
 if [ "$#" -ne 2 ] || [ ${HELP} -eq 1 ]; then
-	echo "./copyToCloudstor <src> <rcloneEndpoint:dest>"
+	echo "copyToCloudstor <src> CloudStor:<dest>"
 	echo "  --help              : This help"
 	echo "  --skipversioncheck  : Skip rclone version checking"
 	echo "  --nocheck           : Just pushes once without retrying"
@@ -72,7 +72,9 @@ if [ "$#" -ne 2 ] || [ ${HELP} -eq 1 ]; then
 	echo "  --pushonce          : Just does a blind push (same as --nocheck --pushfirst)"
 	echo "  --pushfirst         : Skip first oneway check (one less propfind)"
 	echo "  --showdiff          : Show diff when checking for differences"
-
+	echo ""
+	echo "Please visit \"https://support.aarnet.edu.au/hc/en-us/articles/115007168507-Can-I-use-the-command-line-or-WebDav-\" for help setting up rclone to use CloudStor"
+	echo ""
 	exit 1
 fi
 
