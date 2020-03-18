@@ -17,4 +17,3 @@ copyToCloudstor <src> CloudStor:<dest>
 
 ## Help setting up rclone to use CloudStor
 - [Can I use the command line or WebDav? – AARNet Knowledge Base](https://support.aarnet.edu.au/hc/en-us/articles/115007168507-Can-I-use-the-command-line-or-WebDav-)
-
