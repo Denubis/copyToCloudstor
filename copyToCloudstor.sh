@@ -84,7 +84,7 @@ if [ ${VERSIONCHECK} -eq 1 ]; then
 		rclone version --check
 		echo "Upgrade rclone (curl https://rclone.org/install.sh | sudo bash)"
 		exit 1
-	else 
+	else
 		echo "rclone is latest version."
 	fi
 fi
@@ -107,7 +107,7 @@ fi
 if [ ${CHECK} -eq 1 ]; then
 	while ! rclone check --one-way ${SHOWDIFF} ${rcloneoptions} "${source_absolute_path}" "${2}" 2>&1 | tee /dev/stderr | grep ': 0 differences found'; do
 		echo "Starting run ${counter} at $(date)"
-		rclone copy --progress "${rcloneoptions}" "${source_absolute_path}" "${2}"
+		rclone copy --progress ${rcloneoptions} "${source_absolute_path}" "${2}"
 		echo "Done with run ${counter} at $(date)"
 		counter=$((counter+1))
 	done
