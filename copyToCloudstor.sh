@@ -1,11 +1,11 @@
 #!/bin/bash
 
 #Don't forget to run shellcheck (https://github.com/koalaman/shellcheck) after making edits.
-counter=1
+
 set -euo pipefail
 
 #default values
-
+BACKLOG=36
 CHECK=1
 CHECKERS=36
 EXTRAVARS=0
@@ -14,8 +14,7 @@ PUSHFIRST=0
 VERSIONCHECK=1
 SHOWDIFF=""
 TIMEOUT=0
-TRANSFERS=12
-PULL=0
+TRANSFERS=6
 
 #cli options
 POSITIONAL=()
@@ -35,6 +34,11 @@ while [[ $# -gt 0 ]]; do
 		    	shift # past argument
 			shift # past value
 	    	;;
+		--pushonce)
+			PUSHFIRST=1
+			CHECK=0
+		    	shift # past argument
+	    	;;
 		--pushfirst)
 			PUSHFIRST=1
 		    	shift # past argument
@@ -47,12 +51,7 @@ while [[ $# -gt 0 ]]; do
 			VERSIONCHECK=0
 		    	shift # past argument
 	    	;;
-	    --pull)
-			PULL=1
-			CHECK=0
-				shift
-			;;
-    	*)    # unknown option
+		*)    # unknown option
 			EXTRAVARS=1
 			POSITIONAL+=("$1") # save it in an array for later
 			shift # past argument
@@ -65,14 +64,36 @@ fi
 
 #Usage
 if [ "$#" -ne 2 ] || [ ${HELP} -eq 1 ]; then
-	echo "./copyToCloudstor <src> <rcloneEndpoint:dest>"
+	echo "copyToCloudstor <src> CloudStor:<dest>"
 	echo "  --help              : This help"
 	echo "  --skipversioncheck  : Skip rclone version checking"
 	echo "  --nocheck           : Just pushes once without retrying"
 	echo "  -p|--parallel       : Number of file transfers to run in parallel. (default 6)"
+	echo "  --pushonce          : Just does a blind push (same as --nocheck --pushfirst)"
 	echo "  --pushfirst         : Skip first oneway check (one less propfind)"
 	echo "  --showdiff          : Show diff when checking for differences"
-
+	echo ""
+	echo "Please visit \"https://support.aarnet.edu.au/hc/en-us/articles/115007168507-Can-I-use-the-command-line-or-WebDav-\" for help setting up rclone to use CloudStor"
+	echo ""
+	echo "Example:"
+	echo "laptop@work:/datasets$ ./copyToCloudstor.sh dataset.1 CloudStor:/datasets/"
+	echo "rclone is latest version."
+	echo "Copying /datasets/dataset.1 to CloudStor:/datasets/. Starting at Fri Feb 24 03:05:09 PM AEDT 2023"
+	echo "2023/02/24 15:05:09 ERROR : dataset.1: file not in webdav root 'datasets'"
+	echo "2023/02/24 15:05:09 NOTICE: webdav root 'datasets': 1 files missing"
+	echo "2023/02/24 15:05:09 NOTICE: webdav root 'datasets': 1 differences found"
+	echo "2023/02/24 15:05:09 NOTICE: webdav root 'datasets': 1 errors while checking"
+	echo "2023/02/24 15:05:09 Failed to check: 1 differences found"
+	echo "Starting run 1 at Fri Feb 24 03:05:10 PM AEDT 2023"
+	echo "Transferred:            799 B / 799 B, 100%, 266 B/s, ETA 0s"
+	echo "Transferred:            1 / 1, 100%"
+	echo "Elapsed time:         4.1s"
+	echo "Done with run 1 at Fri Feb 24 03:05:14 PM AEDT 2023"
+	echo "2023/02/24 15:05:14 NOTICE: webdav root 'datasets': 0 differences found"
+	echo "2023/02/24 15:05:14 NOTICE: webdav root 'datasets': 1 matching files"
+	echo "2023/02/24 15:05:14 NOTICE: webdav root 'datasets': 0 differences found"
+	echo "Copied 'dataset.1' to 'CloudStor:/datasets/'. Finished at Fri Feb 24 03:05:14 PM AEDT 2023, in 0 minutes and 5 seconds elapsed."
+	echo ""
 	exit 1
 fi
 
@@ -82,7 +103,7 @@ if [ ${VERSIONCHECK} -eq 1 ]; then
 		rclone version --check
 		echo "Upgrade rclone (curl https://rclone.org/install.sh | sudo bash)"
 		exit 1
-	else 
+	else
 		echo "rclone is latest version."
 	fi
 fi
@@ -91,39 +112,25 @@ fi
 SECONDS=0
 source_absolute_path=$(readlink -m "${1}")
 
+rcloneoptions="--transfers ${TRANSFERS} --checkers ${CHECKERS} --timeout ${TIMEOUT} --max-backlog ${BACKLOG}"
 
-rcloneoptions="--transfers ${TRANSFERS} --checkers ${CHECKERS} --timeout ${TIMEOUT}"
+echo "Copying ${source_absolute_path} to ${2}. Starting at $(date)"
 
-if [ ${PULL} -eq 0 ]; then
-	echo "Copying ${source_absolute_path} to ${2}. Starting at $(date)"
-
-	counter=1
-	if [ ${PUSHFIRST} -eq 1 ] || [ ${CHECK} -eq 0 ]; then
-		echo "Starting run ${counter} at $(date) without checks"
-		rclone copy --progress --no-check-dest --no-traverse ${rcloneoptions} "${source_absolute_path}" "${2}"
-		echo "Done with run ${counter} at $(date)"
-		counter=$((counter+1))
-	fi
-	if [ ${CHECK} -eq 1 ]; then
-		while ! rclone check --one-way ${SHOWDIFF} ${rcloneoptions} "${source_absolute_path}" "${2}" 2>&1 | tee /dev/stderr | grep ': 0 differences found'; do
-			echo "Starting run ${counter} at $(date)"
-			rclone copy --progress "${rcloneoptions}" "${source_absolute_path}" "${2}"
-			echo "Done with run ${counter} at $(date)"
-			counter=$((counter+1))
-		done
-	fi
-else
-	echo "Copying ${1} to ${2}. Starting at $(date)"
-
-	counter=1
-	if [ ${PUSHFIRST} -eq 1 ] || [ ${CHECK} -eq 0 ]; then
-		echo "Starting run ${counter} at $(date) without checks"
-		rclone copy --progress --no-check-dest --no-traverse ${rcloneoptions} "${1}" "${2}"
-		echo "Done with run ${counter} at $(date)"
-		counter=$((counter+1))
-	fi
+counter=1
+if [ ${PUSHFIRST} -eq 1 ] || [ ${CHECK} -eq 0 ]; then
+	echo "Starting run ${counter} at $(date) without checks"
+	rclone copy --progress --no-check-dest --no-traverse ${rcloneoptions} "${source_absolute_path}" "${2}"
+	echo "Done with run ${counter} at $(date)"
+	counter=$((counter+1))
 fi
-
+if [ ${CHECK} -eq 1 ]; then
+	while ! rclone check --one-way ${SHOWDIFF} ${rcloneoptions} "${source_absolute_path}" "${2}" 2>&1 | tee /dev/stderr | grep ': 0 differences found'; do
+		echo "Starting run ${counter} at $(date)"
+		rclone copy --progress ${rcloneoptions} "${source_absolute_path}" "${2}"
+		echo "Done with run ${counter} at $(date)"
+		counter=$((counter+1))
+	done
+fi
 
 duration=${SECONDS}
 echo "Copied '${1}' to '${2}'. Finished at $(date), in $((duration / 60)) minutes and $((duration % 60)) seconds elapsed."
